@@ -16,45 +16,64 @@ const loadMoreBtn = new LoadMoreBtn({
 refs.form.addEventListener('submit', onSubmit);
 loadMoreBtn.button.addEventListener('click', fetchArticles);
 
-function onSubmit(event) {
+async function onSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const value = form.elements.news.value.trim();
- 
 
-  if (value === '') throw Notiflix.Notify.info(
-    "Request not completed"
-  );
+  if (value === '') throw Notiflix.Notify.info('Request not completed');
   else {
-    searchService.q = value;
-    searchService.resetPage();
+    try {
+      searchService.q = value;
+      searchService.resetPage();
 
-    loadMoreBtn.show();
-    clearNewsList();
-    fetchArticles().finally(() => form.reset());
+      loadMoreBtn.show();
+      clearNewsList();
+      const totalHits = await fetchArticles();
+      form.reset();
+
+      Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`);
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
 
-function fetchArticles() {
+async function fetchArticles() {
   loadMoreBtn.disable();
 
-  return getArticlesMarkup().then(() => loadMoreBtn.enable());
+  try {
+    const totalHits = await getArticlesMarkup();
+    return totalHits;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loadMoreBtn.enable();
+  }
 }
 
-function getArticlesMarkup() {
-  return searchService
-    .getNews()
-    .then(hits => {
-      if (!hits) {
-        loadMoreBtn.hide();
-        return '';
-      }
-      if (hits.length === 0) throw new Error('No data');
+async function getArticlesMarkup() {
+  try {
+    const response = await searchService.getNews();
 
-      return hits.reduce((markup, hit) => markup + createMarkup(hit), '');
-    })
-    .then(updateNewsList)
-    .catch(onError);
+    if (!response.hits || response.hits.length === 0) {
+      loadMoreBtn.hide();
+      return '';
+    }
+
+    if (response.hits.length === 0) {
+      throw new Error('No data');
+    }
+    const { hits, totalHits } = response;
+
+    const markup = hits.reduce((markup, hit) => markup + createMarkup(hit), '');
+    await updateNewsList(markup);
+
+    return totalHits;
+  } catch (error) {
+    console.error(error);
+    onError(error);
+  }
 }
 
 function createMarkup({
@@ -84,7 +103,7 @@ function createMarkup({
   </div>`;
 }
 
-function updateNewsList(markup) {
+async function updateNewsList(markup) {
   refs.gallery.insertAdjacentHTML('beforeend', markup);
 }
 
@@ -96,6 +115,6 @@ function onError(err) {
   console.error(err);
   loadMoreBtn.hide();
   Notiflix.Notify.info(
-    "Sorry, there are no images matching your search query. Please try again."
+    'Sorry, there are no images matching your search query. Please try again.'
   );
 }
