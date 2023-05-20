@@ -64,8 +64,10 @@ async function getArticlesMarkup() {
 
     if (!response.hits || response.hits.length === 0) {
       loadMoreBtn.hide();
-      onError('No data');
-      return;
+
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
     }
 
     const { hits, totalHits } = response;
@@ -120,6 +122,7 @@ function clearNewsList() {
 function onError(err) {
   console.error(err);
   loadMoreBtn.hide();
+
   Notiflix.Notify.failure(
     'Sorry, there are no images matching your search query. Please try again.'
   );
