@@ -1,6 +1,8 @@
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import Notiflix from 'notiflix';
 import SearchService from './SearchService.js';
 import LoadMoreBtn from './LoadMoreBtn.js';
-import Notiflix from 'notiflix';
 
 const refs = {
   form: document.getElementById('search-form'),
@@ -21,21 +23,25 @@ async function onSubmit(event) {
   const form = event.currentTarget;
   const value = form.elements.news.value.trim();
 
-  if (value === '') throw Notiflix.Notify.info('Request not completed');
-  else {
-    try {
-      searchService.q = value;
-      searchService.resetPage();
+  if (value === '') {
+    Notiflix.Notify.failure('Request not completed');
+    return;
+  }
+  try {
+    searchService.q = value;
+    searchService.resetPage();
 
-      loadMoreBtn.show();
-      clearNewsList();
-      const totalHits = await fetchArticles();
-      form.reset();
+    loadMoreBtn.show();
+    clearNewsList();
+    const totalHits = await fetchArticles();
 
+    form.reset();
+
+    if (totalHits > 0) {
       Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`);
-    } catch (error) {
-      console.error(error);
     }
+  } catch (error) {
+    console.error(error);
   }
 }
 
@@ -58,12 +64,10 @@ async function getArticlesMarkup() {
 
     if (!response.hits || response.hits.length === 0) {
       loadMoreBtn.hide();
-      return '';
+      onError('No data');
+      return;
     }
 
-    if (response.hits.length === 0) {
-      throw new Error('No data');
-    }
     const { hits, totalHits } = response;
 
     const markup = hits.reduce((markup, hit) => markup + createMarkup(hit), '');
@@ -78,6 +82,7 @@ async function getArticlesMarkup() {
 
 function createMarkup({
   webformatURL,
+  largeImageURL,
   tags,
   likes,
   views,
@@ -85,7 +90,7 @@ function createMarkup({
   downloads,
 }) {
   return `<div class="photo-card">
-    <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+  <a href="${largeImageURL}"><img src="${webformatURL}" alt="${tags}" loading="lazy" /></a>
     <div class="info">
       <p class="info-item">
         <b>Likes: ${likes}</b>
@@ -105,6 +110,7 @@ function createMarkup({
 
 async function updateNewsList(markup) {
   refs.gallery.insertAdjacentHTML('beforeend', markup);
+  lightbox.refresh();
 }
 
 function clearNewsList() {
@@ -114,7 +120,13 @@ function clearNewsList() {
 function onError(err) {
   console.error(err);
   loadMoreBtn.hide();
-  Notiflix.Notify.info(
+  Notiflix.Notify.failure(
     'Sorry, there are no images matching your search query. Please try again.'
   );
 }
+
+const lightbox = new SimpleLightbox('.gallery a', {
+  captions: true,
+  captionsData: 'alt',
+  captionsDelay: 250,
+});
