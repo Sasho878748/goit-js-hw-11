@@ -54,7 +54,15 @@ async function fetchArticles() {
   } catch (error) {
     console.error(error);
   } finally {
-    loadMoreBtn.enable();
+  
+    if (searchService.page >= searchService.totalPages) {
+      loadMoreBtn.hide();
+      Notiflix.Notify.info(
+        "We're sorry, but you've reached the end of search results."
+      );
+    } else {
+      loadMoreBtn.enable();
+    }
   }
 }
 
@@ -62,18 +70,31 @@ async function getArticlesMarkup() {
   try {
     const response = await searchService.getNews();
 
-    if (!response.hits || response.hits.length === 0) {
+    if (!response.hits) {
       loadMoreBtn.hide();
+      return '';
+    }
 
+    if (response.hits.length === 0) {
+      loadMoreBtn.hide();
       Notiflix.Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
+      return '';
     }
 
     const { hits, totalHits } = response;
 
     const markup = hits.reduce((markup, hit) => markup + createMarkup(hit), '');
     await updateNewsList(markup);
+
+  
+    if (searchService.page >= searchService.totalPages) {
+      loadMoreBtn.hide();
+      Notiflix.Notify.info(
+        "We're sorry, but you've reached the end of search results."
+      );
+    }
 
     return totalHits;
   } catch (error) {
@@ -113,6 +134,15 @@ function createMarkup({
 async function updateNewsList(markup) {
   refs.gallery.insertAdjacentHTML('beforeend', markup);
   lightbox.refresh();
+
+  const { height: cardHeight } = document
+    .querySelector(".gallery")
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: "smooth",
+  });
 }
 
 function clearNewsList() {
@@ -122,10 +152,6 @@ function clearNewsList() {
 function onError(err) {
   console.error(err);
   loadMoreBtn.hide();
-
-  Notiflix.Notify.failure(
-    'Sorry, there are no images matching your search query. Please try again.'
-  );
 }
 
 const lightbox = new SimpleLightbox('.gallery a', {

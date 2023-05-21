@@ -12,7 +12,7 @@ export default class SearchService {
   async getNews() {
     try {
       const response = await axios.get(
-        `${URL}/?key=${API_KEY}&q=${this.q}&image_type=photo&orientation=horizontal&safesearch=true&page=${this.page}&per_page=100`
+        `${URL}/?key=${API_KEY}&q=${this.q}&image_type=photo&orientation=horizontal&safesearch=true&page=${this.page}&per_page=40`
       );
       const { hits, totalHits } = response.data;
       this.incrementPage();
