@@ -47,15 +47,19 @@ async function onSubmit(event) {
 
 async function fetchArticles() {
   loadMoreBtn.disable();
-const perPage = 40;
-const totalPage = 500/perPage;
+  const perPage = 40;
+  const totalPage = 500 / perPage;
+
   try {
     const totalHits = await getArticlesMarkup();
     return totalHits;
   } catch (error) {
     console.error(error);
   } finally {
-    if (searchService.page >= totalPage || searchService.totalHits <= perPage) {
+    if (
+      searchService.page >= totalPage ||
+      searchService.photoBeenDownload < perPage
+    ) {
       loadMoreBtn.hide();
       Notiflix.Notify.info(
         "We're sorry, but you've reached the end of search results."
@@ -87,13 +91,6 @@ async function getArticlesMarkup() {
 
     const markup = hits.reduce((markup, hit) => markup + createMarkup(hit), '');
     await updateNewsList(markup);
-
-    // if (searchService.page >= searchService.totalHits || searchService.perPage < searchService.totalHits) {
-    //   loadMoreBtn.hide();
-    //   Notiflix.Notify.info(
-    //     "We're sorry, but you've reached the end of search results."
-    //   );
-    // }
 
     return totalHits;
   } catch (error) {
