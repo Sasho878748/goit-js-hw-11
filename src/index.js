@@ -47,15 +47,15 @@ async function onSubmit(event) {
 
 async function fetchArticles() {
   loadMoreBtn.disable();
-
+const perPage = 40;
+const totalPage = 500/perPage;
   try {
     const totalHits = await getArticlesMarkup();
     return totalHits;
   } catch (error) {
     console.error(error);
   } finally {
-  
-    if (searchService.page >= searchService.totalPages) {
+    if (searchService.page >= totalPage || searchService.totalHits <= perPage) {
       loadMoreBtn.hide();
       Notiflix.Notify.info(
         "We're sorry, but you've reached the end of search results."
@@ -88,13 +88,12 @@ async function getArticlesMarkup() {
     const markup = hits.reduce((markup, hit) => markup + createMarkup(hit), '');
     await updateNewsList(markup);
 
-  
-    if (searchService.page >= searchService.totalPages) {
-      loadMoreBtn.hide();
-      Notiflix.Notify.info(
-        "We're sorry, but you've reached the end of search results."
-      );
-    }
+    // if (searchService.page >= searchService.totalHits || searchService.perPage < searchService.totalHits) {
+    //   loadMoreBtn.hide();
+    //   Notiflix.Notify.info(
+    //     "We're sorry, but you've reached the end of search results."
+    //   );
+    // }
 
     return totalHits;
   } catch (error) {
@@ -136,12 +135,12 @@ async function updateNewsList(markup) {
   lightbox.refresh();
 
   const { height: cardHeight } = document
-    .querySelector(".gallery")
+    .querySelector('.gallery')
     .firstElementChild.getBoundingClientRect();
 
   window.scrollBy({
     top: cardHeight * 2,
-    behavior: "smooth",
+    behavior: 'smooth',
   });
 }
 

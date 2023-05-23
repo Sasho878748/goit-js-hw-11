@@ -12,16 +12,16 @@ export default class SearchService {
   constructor() {
     this.page = 1;
     this.q = '';
-    this.totalHitsPhoto = '';
-    this.hitsPhoto = '';
     this.photoBeenDownload = 0;
   }
 
   async getNews() {
+    const perPage = 40;
     const response = await axios.get(
-      `${URL}?key=${API_KEY}&q=${this.q}&per_page=40&page=${this.page}&${searchParams}`
+      `${URL}?key=${API_KEY}&q=${this.q}&per_page=${perPage}&page=${this.page}&${searchParams}`
     );
     const { hits, totalHits } = response.data;
+    this.photoBeenDownload += hits.length;
     this.incrementPage();
     return {
       hits,
@@ -31,6 +31,7 @@ export default class SearchService {
 
   resetPage() {
     this.page = 1;
+    this.photoBeenDownload = 0;
   }
 
   incrementPage() {
